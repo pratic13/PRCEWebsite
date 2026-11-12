@@ -64,6 +64,29 @@
         go(0); start();
     }
 
+    // Stats: count up once, when the card first comes into view
+    var stats = document.querySelectorAll('.stat strong');
+    if (stats.length && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        var parts = [].map.call(stats, function (el) {
+            var m = /^(\D*)(\d+)(.*)$/.exec(el.textContent);
+            return m ? { el: el, pre: m[1], n: parseInt(m[2], 10), post: m[3], full: el.textContent } : null;
+        }).filter(Boolean);
+        var run = function () {
+            var t0 = null, dur = 1300;
+            var step = function (ts) {
+                if (t0 === null) t0 = ts;
+                var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+                parts.forEach(function (s) { s.el.textContent = p < 1 ? s.pre + Math.round(s.n * e) + s.post : s.full; });
+                if (p < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        };
+        var io = new IntersectionObserver(function (es) {
+            if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); run(); }
+        }, { threshold: 0.6 });
+        io.observe(stats[0].parentNode.parentNode);
+    }
+
     // Project filters: sector and status
     var sectorBtns = document.querySelectorAll('.filters button[data-filter]');
     var statusBtns = document.querySelectorAll('.filters button[data-status]');
