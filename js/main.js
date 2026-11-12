@@ -20,10 +20,40 @@
         });
     }
 
-    // Project register filters: sector and status
+    // Hero slideshow: crossfade every 6 s; paused on hover/focus; off for reduced motion
+    var slides = document.querySelectorAll('.hero__slide');
+    var dots = document.querySelectorAll('.hero__dots button');
+    var caption = document.querySelector('.hero__caption');
+    if (slides.length > 1) {
+        var cur = 0, timer = null;
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var show = function (i) {
+            slides[cur].classList.remove('is-active');
+            if (dots[cur]) dots[cur].setAttribute('aria-current', 'false');
+            cur = (i + slides.length) % slides.length;
+            slides[cur].classList.add('is-active');
+            if (dots[cur]) dots[cur].setAttribute('aria-current', 'true');
+            if (caption) caption.textContent = slides[cur].getAttribute('data-caption') || '';
+            var img = slides[cur].querySelector('img[data-src]');
+            if (img) { img.src = img.getAttribute('data-src'); img.removeAttribute('data-src'); }
+        };
+        var start = function () { if (!reduce && !timer) timer = setInterval(function () { show(cur + 1); }, 6000); };
+        var stop = function () { clearInterval(timer); timer = null; };
+        dots.forEach(function (d, i) { d.addEventListener('click', function () { stop(); show(i); start(); }); });
+        var hero = document.querySelector('.hero');
+        hero.addEventListener('mouseenter', stop); hero.addEventListener('mouseleave', start);
+        hero.addEventListener('focusin', stop); hero.addEventListener('focusout', start);
+        // preload the next slides after the page has loaded
+        window.addEventListener('load', function () {
+            document.querySelectorAll('.hero__slide img[data-src]').forEach(function (img) { img.src = img.getAttribute('data-src'); img.removeAttribute('data-src'); });
+        });
+        start();
+    }
+
+    // Project filters: sector and status
     var sectorBtns = document.querySelectorAll('.filters button[data-filter]');
     var statusBtns = document.querySelectorAll('.filters button[data-status]');
-    var rows = document.querySelectorAll('.register__row[data-cat]');
+    var rows = document.querySelectorAll('.pcard[data-cat]');
     var count = document.querySelector('.register__count');
     var state = { sector: 'all', status: 'all' };
     function apply() {
