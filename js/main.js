@@ -20,26 +20,35 @@
         });
     }
 
-    // Project register filters
-    var filters = document.querySelectorAll('.filters button');
+    // Project register filters: sector and status
+    var sectorBtns = document.querySelectorAll('.filters button[data-filter]');
+    var statusBtns = document.querySelectorAll('.filters button[data-status]');
     var rows = document.querySelectorAll('.register__row[data-cat]');
     var count = document.querySelector('.register__count');
-    function applyFilter(cat) {
+    var state = { sector: 'all', status: 'all' };
+    function apply() {
         var shown = 0;
         rows.forEach(function (row) {
-            var match = cat === 'all' || row.getAttribute('data-cat').split(' ').indexOf(cat) !== -1;
-            row.hidden = !match;
-            if (match) shown++;
+            var okSector = state.sector === 'all' || row.getAttribute('data-cat').split(' ').indexOf(state.sector) !== -1;
+            var okStatus = state.status === 'all' || row.getAttribute('data-status') === state.status;
+            row.hidden = !(okSector && okStatus);
+            if (!row.hidden) shown++;
         });
-        filters.forEach(function (b) {
-            b.setAttribute('aria-pressed', b.getAttribute('data-filter') === cat ? 'true' : 'false');
-        });
+        sectorBtns.forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-filter') === state.sector ? 'true' : 'false'); });
+        statusBtns.forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-status') === state.status ? 'true' : 'false'); });
         if (count) count.textContent = 'Showing ' + shown + ' of ' + rows.length + ' assignments';
     }
-    filters.forEach(function (b) {
-        b.addEventListener('click', function () { applyFilter(b.getAttribute('data-filter')); });
+    sectorBtns.forEach(function (b) {
+        b.addEventListener('click', function () { state.sector = b.getAttribute('data-filter'); apply(); });
     });
-    if (filters.length) applyFilter('all');
+    statusBtns.forEach(function (b) {
+        b.addEventListener('click', function () { state.status = b.getAttribute('data-status'); apply(); });
+    });
+    if (sectorBtns.length) {
+        var fromHash = location.hash.replace('#', '');
+        if (document.querySelector('.filters button[data-filter="' + fromHash + '"]')) state.sector = fromHash;
+        apply();
+    }
 
     // Enquiry form: opens the visitor's email app with the details filled in.
     var form = document.getElementById('enquiry');
