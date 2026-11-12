@@ -120,8 +120,8 @@ p { max-width: 70ch; }
 .hero__dots button { width: 34px; height: 5px; border-radius: 3px; border: 0; background: rgba(255,255,255,.45); cursor: pointer; padding: 0; transition: background .2s, width .2s; }
 .hero__dots button[aria-current="true"] { background: var(--amber); width: 52px; }
 .slide.is-active .slide__content > *:nth-child(5) { transition-delay: .75s; }
-.slide.is-active .slide__bg { animation: slide-zoom 9s ease-out both; }
-@keyframes slide-zoom { from { transform: scale(1.07); } to { transform: none; } }
+.slide__bg { transform: scale(1.07); transition: transform 9s ease-out; }     /* photos settle slowly while their slide is showing */
+.slide.is-active .slide__bg { transform: none; }
 .slide__title { text-wrap: balance; }
 /* a small strip of photos at the foot of a slide: the range of instruments or tests behind the headline */
 .slide__aside { position: absolute; left: 0; right: 0; bottom: 74px; z-index: 2; display: flex; justify-content: flex-end; pointer-events: none; opacity: 0; transition: opacity .6s ease .7s; }
