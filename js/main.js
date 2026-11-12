@@ -20,34 +20,48 @@
         });
     }
 
-    // Hero slideshow: crossfade every 6 s; paused on hover/focus; off for reduced motion
-    var slides = document.querySelectorAll('.hero__slide');
-    var dots = document.querySelectorAll('.hero__dots button');
-    var caption = document.querySelector('.hero__caption');
-    if (slides.length > 1) {
+    // Hero slider: slides horizontally every 6.5 s; arrows, dots and swipe; pauses on hover/focus
+    var hero = document.querySelector('.hero');
+    var track = document.querySelector('.hero__track');
+    var slides = document.querySelectorAll('.slide');
+    if (hero && track && slides.length > 1) {
+        var dots = hero.querySelectorAll('.hero__dots button');
         var cur = 0, timer = null;
         var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var show = function (i) {
-            slides[cur].classList.remove('is-active');
-            if (dots[cur]) dots[cur].setAttribute('aria-current', 'false');
+        var load = function (sl) { var im = sl.querySelector('img[data-src]'); if (im) { im.src = im.getAttribute('data-src'); im.removeAttribute('data-src'); } };
+        var go = function (i) {
             cur = (i + slides.length) % slides.length;
-            slides[cur].classList.add('is-active');
-            if (dots[cur]) dots[cur].setAttribute('aria-current', 'true');
-            if (caption) caption.textContent = slides[cur].getAttribute('data-caption') || '';
-            var img = slides[cur].querySelector('img[data-src]');
-            if (img) { img.src = img.getAttribute('data-src'); img.removeAttribute('data-src'); }
+            load(slides[cur]); load(slides[(cur + 1) % slides.length]);
+            track.style.transform = 'translateX(' + (-cur * 100) + '%)';
+            slides.forEach(function (sl, k) {
+                var on = k === cur;
+                sl.classList.toggle('is-active', on);
+                sl.setAttribute('aria-hidden', on ? 'false' : 'true');
+                if ('inert' in sl) sl.inert = !on;
+            });
+            dots.forEach(function (d, k) { d.setAttribute('aria-current', k === cur ? 'true' : 'false'); });
         };
-        var start = function () { if (!reduce && !timer) timer = setInterval(function () { show(cur + 1); }, 6000); };
+        var start = function () { if (!reduce && !timer) timer = setInterval(function () { go(cur + 1); }, 6500); };
         var stop = function () { clearInterval(timer); timer = null; };
-        dots.forEach(function (d, i) { d.addEventListener('click', function () { stop(); show(i); start(); }); });
-        var hero = document.querySelector('.hero');
+        var restart = function () { stop(); start(); };
+        dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k); restart(); }); });
+        var prev = hero.querySelector('.hero__arrow--prev'), next = hero.querySelector('.hero__arrow--next');
+        if (prev) prev.addEventListener('click', function () { go(cur - 1); restart(); });
+        if (next) next.addEventListener('click', function () { go(cur + 1); restart(); });
         hero.addEventListener('mouseenter', stop); hero.addEventListener('mouseleave', start);
         hero.addEventListener('focusin', stop); hero.addEventListener('focusout', start);
-        // preload the next slides after the page has loaded
-        window.addEventListener('load', function () {
-            document.querySelectorAll('.hero__slide img[data-src]').forEach(function (img) { img.src = img.getAttribute('data-src'); img.removeAttribute('data-src'); });
+        hero.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowLeft') { go(cur - 1); } else if (e.key === 'ArrowRight') { go(cur + 1); }
         });
-        start();
+        var x0 = null;
+        hero.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; stop(); }, { passive: true });
+        hero.addEventListener('touchend', function (e) {
+            if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null;
+            if (Math.abs(dx) > 40) go(cur + (dx < 0 ? 1 : -1)); start();
+        });
+        document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else start(); });
+        window.addEventListener('load', function () { slides.forEach(load); });
+        go(0); start();
     }
 
     // Project filters: sector and status
