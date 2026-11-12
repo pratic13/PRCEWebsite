@@ -20,16 +20,27 @@
         });
     }
 
-    // Hero slider: slides horizontally every 6.5 s; arrows, dots and swipe; pauses on hover/focus
+    // Introduction slider: arrows, dots, swipe and arrow keys. Photo slides move on after 6.5 s.
+    // The first slide holds the "How we work" drawing (js/showcase.js) and moves on when that has
+    // played through. Nothing moves by itself while the pointer or the keyboard focus is inside,
+    // or where the visitor's device has animations switched off.
     var hero = document.querySelector('.hero');
     var track = document.querySelector('.hero__track');
     var slides = document.querySelectorAll('.slide');
     if (hero && track && slides.length > 1) {
         var dots = hero.querySelectorAll('.hero__dots button');
-        var cur = 0, timer = null;
+        var live = hero.querySelector('[data-showcase]');
+        var cur = 0, timer = null, held = false;
         var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var load = function (sl) { var im = sl.querySelector('img[data-src]'); if (im) { im.src = im.getAttribute('data-src'); im.removeAttribute('data-src'); } };
+        var load = function (sl) {
+            [].forEach.call(sl.querySelectorAll('img[data-src]'), function (im) { im.src = im.getAttribute('data-src'); im.removeAttribute('data-src'); });
+        };
+        var onLive = function () { return !!live && slides[cur].contains(live); };
+        var stop = function () { clearTimeout(timer); timer = null; };
+        // the drawing reports its own end; the long timer is only a fallback if it cannot run
+        var start = function () { stop(); if (!reduce && !held && !document.hidden) timer = setTimeout(function () { go(cur + 1); }, onLive() ? 70000 : 6500); };
         var go = function (i) {
+            var was = cur;
             cur = (i + slides.length) % slides.length;
             load(slides[cur]); load(slides[(cur + 1) % slides.length]);
             track.style.transform = 'translateX(' + (-cur * 100) + '%)';
@@ -40,28 +51,37 @@
                 if ('inert' in sl) sl.inert = !on;
             });
             dots.forEach(function (d, k) { d.setAttribute('aria-current', k === cur ? 'true' : 'false'); });
+            if (was !== cur && onLive() && live.showcase) live.showcase.restart();   // back on the drawing: play it from the top
+            start();
         };
-        var start = function () { if (!reduce && !timer) timer = setInterval(function () { go(cur + 1); }, 6500); };
-        var stop = function () { clearInterval(timer); timer = null; };
-        var restart = function () { stop(); start(); };
-        dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k); restart(); }); });
+        if (live) live.addEventListener('showcase:end', function () { if (onLive() && !held && !reduce) go(cur + 1); });
+        dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k); }); });
         var prev = hero.querySelector('.hero__arrow--prev'), next = hero.querySelector('.hero__arrow--next');
-        if (prev) prev.addEventListener('click', function () { go(cur - 1); restart(); });
-        if (next) next.addEventListener('click', function () { go(cur + 1); restart(); });
-        hero.addEventListener('mouseenter', stop); hero.addEventListener('mouseleave', start);
-        hero.addEventListener('focusin', stop); hero.addEventListener('focusout', start);
+        if (prev) prev.addEventListener('click', function () { go(cur - 1); });
+        if (next) next.addEventListener('click', function () { go(cur + 1); });
+        // hold while a mouse pointer is over the slider, a finger is on it, or keyboard focus is inside it
+        var why = { hover: false, focus: false, touch: false };
+        var hold = function (k, on) { why[k] = on; held = why.hover || why.focus || why.touch; if (held) stop(); else start(); };
+        var keyFocus = function (el) { try { return el.matches(':focus-visible'); } catch (err) { return true; } };
+        hero.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') hold('hover', true); });
+        hero.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hold('hover', false); });
+        hero.addEventListener('focusin', function (e) { hold('focus', keyFocus(e.target)); });
+        hero.addEventListener('focusout', function () { hold('focus', false); });
         hero.addEventListener('keydown', function (e) {
+            if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
             if (e.key === 'ArrowLeft') { go(cur - 1); } else if (e.key === 'ArrowRight') { go(cur + 1); }
         });
-        var x0 = null;
-        hero.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; stop(); }, { passive: true });
+        var x0 = null, y0 = null;
+        hero.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; hold('touch', true); }, { passive: true });
         hero.addEventListener('touchend', function (e) {
-            if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null;
-            if (Math.abs(dx) > 40) go(cur + (dx < 0 ? 1 : -1)); start();
+            var dx = x0 === null ? 0 : e.changedTouches[0].clientX - x0, dy = x0 === null ? 0 : e.changedTouches[0].clientY - y0; x0 = null;
+            hold('touch', false);
+            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) go(cur + (dx < 0 ? 1 : -1));
         });
+        hero.addEventListener('touchcancel', function () { x0 = null; hold('touch', false); });
         document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else start(); });
         window.addEventListener('load', function () { slides.forEach(load); });
-        go(0); start();
+        go(0);
     }
 
     // Stats: count up once, when the card first comes into view

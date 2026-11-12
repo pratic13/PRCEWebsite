@@ -16,7 +16,7 @@
 <link rel="icon" href="img/brand/favicon-48.png" sizes="48x48" type="image/png">
 <link rel="apple-touch-icon" href="img/brand/favicon-192.png">
 <link rel="preload" href="fonts/poppins-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" as="image" href="img/hero-nsv.jpg" fetchpriority="high">
+
 <link rel="stylesheet" href="css/style.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"ProfessionalService","name":"P R Consulting Engineers LLP","url":"https://prconsulting.co.in",
@@ -36,6 +36,7 @@
 <a href="index.html" aria-current="page">Home</a>
 <a href="services.html">Services</a>
 <a href="projects.html">Projects</a>
+<a href="equipment.html">Equipment</a>
 <a href="about.html">About</a>
 <a class="btn btn--primary" href="contact.html">Get a quote</a>
 </nav>
@@ -44,27 +45,36 @@
 <main id="main">
 
 <section class="hero" aria-roledescription="carousel" aria-label="Introduction">
-<div class="hero__track"><div class="slide is-active" role="group" aria-roledescription="slide" aria-label="1 of 5">
-<img class="slide__bg" src="img/hero-nsv.jpg" fetchpriority="high" alt="">
-<div class="wrap slide__content"><span class="slide__kicker">P R Consulting Engineers</span><h1 class="slide__title">Survey, testing and consulting engineers</h1><p class="slide__lede">From the first survey peg to the completion certificate, we measure, test, design and supervise infrastructure across Maharashtra.</p><div class="slide__actions"><a class="btn btn--primary" href="contact.html">Get a quote</a><a class="btn btn--ghost" href="services.html">Our services</a></div></div>
+<div class="hero__track"><div class="slide slide--live is-active" role="group" aria-roledescription="slide" aria-label="1 of 4">
+<div class="wrap slide__content slide__content--live">
+<div class="slide__text"><span class="slide__kicker">How we work</span><h1 class="slide__title">Survey, testing and consulting engineers</h1><p class="slide__lede">From the first survey peg to the completion certificate, we measure, test, design and supervise infrastructure across Maharashtra.</p><div class="slide__actions"><a class="btn btn--primary" href="contact.html">Get a quote</a><a class="btn btn--ghost" href="services.html">Our services</a></div></div>
+<div class="live" data-showcase="hero" data-rate="1.25">
+<div class="showcase__stage">
+<canvas role="img" aria-label="Animated illustration of one bridge site in four stages. A drone surveys the ground and contours are drawn. Four boreholes are drilled and the soil and rock layers are joined between them. The road level, a three-span bridge founded on rock, the pavement crust and the estimate are then worked out. Last, the bridge and the road are built while the founding rock, concrete, levels, compaction and pavement thickness are checked, and the road opens to traffic."></canvas>
+<noscript><img src="img/showcase-poster.jpg" alt="Section through a bridge site showing soil and rock layers, four boreholes and the finished three-span bridge and approach road, with the quality checks marked"></noscript>
+<p class="showcase__caption" data-caption aria-hidden="true">Survey, investigation, design and supervision</p>
+<button class="showcase__play" type="button" data-play hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6a.6.6 0 0 0 .92.5l9-5.8a.6.6 0 0 0 0-1L4.92 1.7A.6.6 0 0 0 4 2.2z"/></svg>Play the animation</button>
+<button class="showcase__toggle" type="button" data-toggle aria-pressed="false" aria-label="Pause animation"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.6" height="12" rx="1"/><rect x="9.4" y="2" width="3.6" height="12" rx="1"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6a.6.6 0 0 0 .92.5l9-5.8a.6.6 0 0 0 0-1L4.92 1.7A.6.6 0 0 0 4 2.2z"/></svg></button>
 </div>
-<div class="slide" role="group" aria-roledescription="slide" aria-label="2 of 5">
+<ol class="live__steps" aria-label="Stages of the animation"><li><button class="lstep is-active" type="button" data-stage="0" aria-current="step"><span class="step__bar" aria-hidden="true"><i></i></span>Survey</button></li><li><button class="lstep" type="button" data-stage="1"><span class="step__bar" aria-hidden="true"><i></i></span>Investigate</button></li><li><button class="lstep" type="button" data-stage="2"><span class="step__bar" aria-hidden="true"><i></i></span>Design</button></li><li><button class="lstep" type="button" data-stage="3"><span class="step__bar" aria-hidden="true"><i></i></span>Supervise</button></li></ol>
+</div>
+</div>
+</div>
+<div class="slide" role="group" aria-roledescription="slide" aria-label="2 of 4">
 <img class="slide__bg" data-src="img/hero-drone.jpg" alt="">
-<div class="wrap slide__content"><span class="slide__kicker">Survey &amp; mapping</span><h2 class="slide__title">Total station, DGPS and drone surveys you can design on</h2><p class="slide__lede">Road corridors, canals and command areas, city streets, industrial plots and campuses, delivered in AutoCAD, Civil 3D and GIS.</p><div class="slide__actions"><a class="btn btn--primary" href="services.html#survey">Survey services</a><a class="btn btn--ghost" href="services.html#drone">Drone survey</a></div></div>
+<div class="wrap slide__content"><span class="slide__kicker">Topographic survey</span><h2 class="slide__title">From total station to drone</h2><p class="slide__lede">Topographic surveys for road corridors, canals and command areas, city streets, industrial plots and campuses, delivered in AutoCAD, Civil 3D and GIS.</p><div class="slide__actions"><a class="btn btn--primary" href="services.html#survey">Survey services</a><a class="btn btn--ghost" href="equipment.html#survey">See the equipment</a></div></div>
+<div class="wrap slide__aside"><ul class="slide__range"><li><img data-src="img/thumbs/total-station.jpg" alt="" width="240" height="172"><span>Total station</span></li><li><img data-src="img/thumbs/dgps.jpg" alt="" width="240" height="172"><span>DGPS</span></li><li><img data-src="img/thumbs/drone.jpg" alt="" width="240" height="172"><span>Drone</span></li></ul></div>
 </div>
-<div class="slide" role="group" aria-roledescription="slide" aria-label="3 of 5">
-<img class="slide__bg" data-src="img/test-bbd.jpg" alt="">
-<div class="wrap slide__content"><span class="slide__kicker">Road &amp; pavement testing</span><h2 class="slide__title">Our own testing fleet, on your road</h2><p class="slide__lede">Network survey vehicle, falling weight deflectometer, Benkelman beam, bump integrator, axle load and traffic surveys.</p><div class="slide__actions"><a class="btn btn--primary" href="services.html#testing">Testing services</a><a class="btn btn--ghost" href="index.html#testing">See the equipment</a></div></div>
+<div class="slide" role="group" aria-roledescription="slide" aria-label="3 of 4">
+<img class="slide__bg" data-src="img/river-crossing-drill.jpg" alt="">
+<div class="wrap slide__content"><span class="slide__kicker">Geotechnical investigation &amp; testing</span><h2 class="slide__title">Drilling, sampling and field testing</h2><p class="slide__lede">NX core drilling, trial pits and plate load tests for foundations. Network survey vehicle, FWD, Benkelman beam and axle load surveys for roads.</p><div class="slide__actions"><a class="btn btn--primary" href="services.html#geotech">Investigation and testing</a><a class="btn btn--ghost" href="equipment.html#geotech">See the equipment</a></div></div>
+<div class="wrap slide__aside"><ul class="slide__range"><li><img data-src="img/thumbs/cores.jpg" alt="" width="240" height="172"><span>Rock cores</span></li><li><img data-src="img/thumbs/plate-load.jpg" alt="" width="240" height="172"><span>Plate load test</span></li><li><img data-src="img/thumbs/fwd.jpg" alt="" width="240" height="172"><span>FWD</span></li><li><img data-src="img/thumbs/bbd.jpg" alt="" width="240" height="172"><span>Benkelman beam</span></li></ul></div>
 </div>
-<div class="slide" role="group" aria-roledescription="slide" aria-label="4 of 5">
-<img class="slide__bg" data-src="img/newasa-drilling.jpg" alt="">
-<div class="wrap slide__content"><span class="slide__kicker">Geotechnical investigation</span><h2 class="slide__title">Core drilling and testing for bridges, ghats and intake works</h2><p class="slide__lede">NX core drilling, trial pits, plate load tests and laboratory testing, logged and checked against what we see on site.</p><div class="slide__actions"><a class="btn btn--primary" href="services.html#geotech">Geotechnical services</a><a class="btn btn--ghost" href="projects.html">Projects</a></div></div>
-</div>
-<div class="slide" role="group" aria-roledescription="slide" aria-label="5 of 5">
+<div class="slide" role="group" aria-roledescription="slide" aria-label="4 of 4">
 <img class="slide__bg" data-src="img/hero-bridge.jpg" alt="">
-<div class="wrap slide__content"><span class="slide__kicker">Design, DPRs &amp; PMC</span><h2 class="slide__title">Designs and supervision for roads, bridges and public works</h2><p class="slide__lede">Over 780 km of rural road DPRs, 17 bridge DPRs and project management for MRRDA, municipal councils and private owners.</p><div class="slide__actions"><a class="btn btn--primary" href="projects.html">View projects</a><a class="btn btn--ghost" href="#site-to-dpr">See a DPR take shape</a></div></div>
+<div class="wrap slide__content"><span class="slide__kicker">Consultancy</span><h2 class="slide__title">DPRs, designs and drawings</h2><p class="slide__lede">Over 780 km of rural road DPRs, 17 bridge DPRs and project management for MRRDA, municipal councils and private owners.</p><div class="slide__actions"><a class="btn btn--primary" href="projects.html">View projects</a><a class="btn btn--ghost" href="services.html#design">Design services</a></div><ul class="slide__sectors" aria-label="Sectors we work in"><li><a href="projects.html#roads">Roads &amp; highways</a></li><li><a href="projects.html#bridges">Bridges</a></li><li><a href="projects.html#water">Irrigation &amp; water resources</a></li><li><a href="projects.html#supply">Water supply</a></li><li><a href="projects.html#urban">Urban &amp; municipal</a></li><li><a href="projects.html#industrial">Industrial &amp; institutional</a></li></ul></div>
 </div></div>
-<div class="hero__controls"><div class="wrap"><button class="hero__arrow hero__arrow--prev" type="button" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="hero__dots"><button type="button" aria-label="Show slide 1" aria-current="true"></button><button type="button" aria-label="Show slide 2" aria-current="false"></button><button type="button" aria-label="Show slide 3" aria-current="false"></button><button type="button" aria-label="Show slide 4" aria-current="false"></button><button type="button" aria-label="Show slide 5" aria-current="false"></button></div><button class="hero__arrow hero__arrow--next" type="button" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button></div></div>
+<div class="hero__controls"><div class="wrap"><button class="hero__arrow hero__arrow--prev" type="button" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><div class="hero__dots"><button type="button" aria-label="Show slide 1" aria-current="true"></button><button type="button" aria-label="Show slide 2" aria-current="false"></button><button type="button" aria-label="Show slide 3" aria-current="false"></button><button type="button" aria-label="Show slide 4" aria-current="false"></button></div><button class="hero__arrow hero__arrow--next" type="button" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button></div></div>
 </section>
 
 <div class="stats"><div class="wrap"><div class="stats__card"><div class="stat" style="--c:#f9b317"><strong>104</strong><span>Assignments since 2019</span></div><div class="stat" style="--c:#23a0da"><strong>780+ km</strong><span>Rural road DPRs completed</span></div><div class="stat" style="--c:#b5d242"><strong>91</strong><span>Villages, water supply DPRs</span></div><div class="stat" style="--c:#cf212a"><strong>20</strong><span>Districts across Maharashtra</span></div></div></div></div>
@@ -85,44 +95,6 @@
 </div>
 <div class="split__media"><img src="img/dgps-team.jpg" alt="PRCE survey team with DGPS and total station equipment" loading="lazy">
 <div class="split__badge"><strong>Since 2019</strong><span>104 assignments for 40+ clients</span></div></div>
-</div>
-</section>
-
-<section class="showcase" id="site-to-dpr" data-showcase aria-labelledby="showcase-title">
-<div class="wrap">
-<div class="showcase__head">
-<div><span class="kicker">Survey, investigation, design</span>
-<h2 id="showcase-title">How a site becomes a DPR</h2></div>
-<p class="showcase__lede">Watch one bridge site go from bare ground to drawings and an estimate, the way our survey, investigation and design teams work through it.</p>
-</div>
-<div class="showcase__stage">
-<canvas role="img" aria-label="Animated illustration of one bridge site in three stages. A drone surveys the ground and contours are drawn. Four boreholes are drilled and the soil and rock layers are joined between them. The road level, a three-span bridge founded on rock, the pavement crust and the estimate are then worked out."></canvas>
-<noscript><img src="img/showcase-poster.jpg" alt="Section through a bridge site showing soil and rock layers, four boreholes, the designed road level and a three-span bridge founded on rock" loading="lazy"></noscript>
-<p class="showcase__caption" data-caption aria-hidden="true">Survey, investigation and design</p>
-<button class="showcase__play" type="button" data-play hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6a.6.6 0 0 0 .92.5l9-5.8a.6.6 0 0 0 0-1L4.92 1.7A.6.6 0 0 0 4 2.2z"/></svg>Play the animation</button>
-<button class="showcase__toggle" type="button" data-toggle aria-pressed="false" aria-label="Pause animation"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.6" height="12" rx="1"/><rect x="9.4" y="2" width="3.6" height="12" rx="1"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6a.6.6 0 0 0 .92.5l9-5.8a.6.6 0 0 0 0-1L4.92 1.7A.6.6 0 0 0 4 2.2z"/></svg></button>
-</div>
-<ol class="showcase__steps">
-<li><button class="step is-active" type="button" data-stage="0" aria-current="step">
-<span class="step__bar" aria-hidden="true"><i></i></span>
-<span class="step__num">Stage 1</span>
-<span class="step__title">Survey</span>
-<span class="step__text">Drone, DGPS and total station teams capture the ground as a point cloud, then a surface model with contours tied to control points.</span>
-</button></li>
-<li><button class="step" type="button" data-stage="1">
-<span class="step__bar" aria-hidden="true"><i></i></span>
-<span class="step__num">Stage 2</span>
-<span class="step__title">Geotechnical investigation</span>
-<span class="step__text">A borehole at every foundation. We log SPT values and rock cores, test them in the laboratory and fix the founding levels.</span>
-</button></li>
-<li><button class="step" type="button" data-stage="2">
-<span class="step__bar" aria-hidden="true"><i></i></span>
-<span class="step__num">Stage 3</span>
-<span class="step__title">Design and DPR</span>
-<span class="step__text">Engineers fit the road level and the bridge to the surveyed ground, the rock and the flood level, then prepare drawings, quantities and the estimate.</span>
-</button></li>
-</ol>
-<p class="showcase__note">An illustrative example, not a specific project. <a href="services.html">See all our services</a></p>
 </div>
 </section>
 
@@ -155,6 +127,7 @@
 <figure class="tile"><img src="img/test-bi.jpg" alt="Bump integrator" loading="lazy"><figcaption>Bump integrator<span>Riding quality (roughness)</span></figcaption></figure>
 <figure class="tile"><img src="img/test-axle-night.jpg" alt="Axle load survey" loading="lazy"><figcaption>Axle load survey<span>Day and night truck weighing</span></figcaption></figure>
 <figure class="tile"><img src="img/traffic-count.jpg" alt="Traffic survey" loading="lazy"><figcaption>Traffic survey<span>Classified counts with video</span></figcaption></figure></div>
+<p style="margin-top:28px"><a class="link-arrow" href="equipment.html">See all our survey, testing and design equipment</a></p>
 </div>
 </section>
 
@@ -215,7 +188,7 @@
 </div>
 <div>
 <h2>Company</h2>
-<ul><li><a href="about.html">About us</a></li><li><a href="projects.html">Projects</a></li><li><a href="projects.html#field">Site photos</a></li><li><a href="contact.html">Contact</a></li></ul>
+<ul><li><a href="about.html">About us</a></li><li><a href="projects.html">Projects</a></li><li><a href="equipment.html">Equipment</a></li><li><a href="projects.html#field">Site photos</a></li><li><a href="contact.html">Contact</a></li></ul>
 </div>
 <div>
 <h2>Services</h2>

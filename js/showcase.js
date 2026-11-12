@@ -1,9 +1,12 @@
-// P R Consulting Engineers LLP — "How a site becomes a DPR".
-// One bridge site drawn in three stages on a canvas: drone survey (3D), geotechnical
-// investigation and design (section A–A′ through the same ground).
+// P R Consulting Engineers LLP — "How we work".
+// One bridge site drawn in four stages on a canvas: drone survey (3D), then, on section
+// A–A′ through the same ground, geotechnical investigation, design, and supervision of
+// the construction.
 // Dependency-free. Every frame is a pure function of the timeline position, so the
 // piece can be paused and jumped between stages. Where the visitor's device has animations
 // switched off it does not start by itself: it shows a still and a Play button instead.
+// data-showcase="hero" marks the smaller copy in the home page introduction; data-rate
+// sets its playback speed.
 
 (function () {
     'use strict';
@@ -18,6 +21,7 @@
     var steps = [].slice.call(root.querySelectorAll('[data-stage]'));
     var mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
     var reduce = !!(mq && mq.matches);
+    var mini = root.getAttribute('data-showcase') === 'hero', rate = parseFloat(root.getAttribute('data-rate')) || 1;
 
     var sin = Math.sin, cos = Math.cos, abs = Math.abs, min = Math.min, max = Math.max, floor = Math.floor, round = Math.round, PI = Math.PI;
     function c01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
@@ -38,14 +42,15 @@
     var T1 = 10.6;          // survey ends, camera starts swinging into the section
     var T2S = 12.4;         // section view reached, drilling starts
     var T2 = 22.6;          // design starts
-    var T3 = 34.4;          // design complete, fade
-    var TEND = 35.2;
-    var ST0 = [0, T1, T2], ST1 = [T1, T2, TEND], STILL = [T1 - 0.05, T2 - 0.05, T3 - 0.2];
+    var T4S = 34.0;         // design complete, construction supervision starts
+    var T4 = 45.4;          // work complete, fade
+    var TEND = 46.2;
+    var ST0 = [0, T1, T2, T4S], ST1 = [T1, T2, T4S, TEND], STILL = [T1 - 0.05, T2 - 0.05, T4S - 0.05, T4 - 0.2], LAST = STILL.length - 1;
 
     // ------------------------------------------------------------------ the site (metres, RL in metres)
     var LX = 320, LY = 220, Y0 = 110, XA = 80, XB = 240, OX = 160, OY = 110;
     var BASE = 548.6, SLAB = 545.2, SEC_BOT = 543.0, VE3 = 3.0;
-    var LWL = 550.4, HFL = 553.4, FRL_B = 556.1, SOF = FRL_B - 1.05;
+    var LWL = 550.4, HFL = 553.4, FRL_B = 556.1, SOF = FRL_B - 1.05, CRT = 0.53;   // CRT: pavement crust thickness on the approaches
 
     function nalaX(y) { return 160 + 20 * sin((y - 110) / 64) + 7 * sin((y - 110) / 21); }
     function ground(x, y) {
@@ -95,6 +100,7 @@
     var cellCol = new Array(NX * NY), cellCol2 = new Array(NX * NY / 4), conR = [], conI = [], zMin = 1e9, zMax = -1e9;
     var LV0 = 551, LVN = 13;
     var GP = new Float32Array(LX + 1), MP = new Float32Array(LX + 1), WP = new Float32Array(LX + 1), HP = new Float32Array(LX + 1), FR = new Float32Array(LX + 1);
+    var FM = new Float32Array(LX + 1), GD = new Float32Array(LX + 1), GR = GP;   // formation level under the crust; ground during construction; ground being drawn
     var RIDGE_Y = [146, 180, 214], RIDGE_COL = ['#2d2978', '#29256c', '#252162'], ridgeP = [];
     var NP = NX * NY * 2, ptX = new Float32Array(NP), ptY = new Float32Array(NP), ptZ = new Float32Array(NP), ptT = new Float32Array(NP), ptC = new Uint8Array(NP);
     var PCOL = ['#3ba4e8', '#5cc6ea', '#8ed8aa', '#c3dd58', '#f9b317'];
@@ -182,6 +188,7 @@
             if (x <= 136) FR[x] = lerp(GP[XA], FRL_B, ss(XA + 2, 134, x));
             else if (x >= 184) FR[x] = lerp(FRL_B, GP[XB], ss(186, XB - 2, x));
             else FR[x] = FRL_B;
+            FM[x] = FR[x] - CRT;
         }
         for (k = 0; k < RIDGE_Y.length; k++) { var rp = new Float32Array(LX / 2 + 1); for (x = 0; x <= LX; x += 2) rp[x >> 1] = ground(x, RIDGE_Y[k]); ridgeP.push(rp); }
         // point cloud
@@ -289,15 +296,15 @@
             var px = dx * cos(yy) - dy * sin(yy), py = -((dx * sin(yy) + dy * cos(yy)) * sin(el) + (zz - oz) * cos(el) * VE3);
             bx0 = min(bx0, px); bx1 = max(bx1, px); by0 = min(by0, py); by1 = max(by1, py);
         }
-        var top = compact ? 94 : 52, bot = compact ? 18 : 16, availH = H - top - bot;
+        var top = compact ? (mini ? 50 : 94) : 52, bot = compact ? 18 : 16, availH = H - top - bot;
         var S = min(W * (compact ? 0.95 : 0.8) / (bx1 - bx0), availH / (by1 - by0));
         V3 = { yaw: yaw, el: el, S: S, Z: S * VE3, x0: W * (compact ? 0.5 : 0.56) - (bx0 + bx1) / 2 * S, y0: top + availH / 2 - (by0 + by1) / 2 * S, oz: oz };
-        VS = { yaw: 0, el: 0.07, S: W * (compact ? 0.78 : 0.815) / (XB - XA), Z: H * 0.47 / 15.6, x0: W / 2, y0: H * (compact ? 0.4 : 0.385), oz: 556 };
+        VS = { yaw: 0, el: 0.07, S: W * (compact ? 0.78 : 0.815) / (XB - XA), Z: H * 0.47 / 15.6, x0: W / 2, y0: compact ? H * 0.4 : max(H * 0.385, 150), oz: 556 };
         bgGrad = ctx.createRadialGradient(W * 0.5, H * 0.38, 0, W * 0.5, H * 0.38, max(W, H) * 0.78);
         bgGrad.addColorStop(0, '#2c2772'); bgGrad.addColorStop(0.55, '#1d194c'); bgGrad.addColorStop(1, '#130f36');
         XV0 = max(0, floor(OX - (W / 2) / VS.S) - 1); XV1 = min(LX, Math.ceil(OX + (W / 2) / VS.S) + 1);
         insetBottom = VS.y0 - (GP[XB] - VS.oz) * cos(VS.el) * VS.Z - 49;
-        wideInset = !compact && W >= 880 && insetBottom > 132;
+        wideInset = !mini && !compact && W >= 880 && insetBottom > 132;
         ctx.font = '500 ' + (compact ? 9.5 : 12) + 'px ' + F_BODY;
         var tw = 0; MAT.forEach(function (m) { tw = max(tw, ctx.measureText(compact ? m.short : m.name).width); });
         labelZone = [83, 86 + (tw + 10) / VS.S];
@@ -416,8 +423,8 @@
     }
     function facePath(zb) {
         var x;
-        ctx.beginPath(); ctx.moveTo(PX(0, Y0), PY(0, Y0, GP[0]));
-        for (x = 2; x <= LX; x += 2) ctx.lineTo(PX(x, Y0), PY(x, Y0, GP[x]));
+        ctx.beginPath(); ctx.moveTo(PX(0, Y0), PY(0, Y0, GR[0]));
+        for (x = 2; x <= LX; x += 2) ctx.lineTo(PX(x, Y0), PY(x, Y0, GR[x]));
         if (zb != null) { ctx.lineTo(PX(LX, Y0), PY(LX, Y0, zb)); ctx.lineTo(PX(0, Y0), PY(0, Y0, zb)); ctx.closePath(); }
     }
     function face(a, q) {
@@ -430,7 +437,7 @@
     }
     function flag(x, s, a) {
         if (a <= 0) return;
-        var sx = PX(x, Y0), sy = PY(x, Y0, GP[x]), h = compact ? 22 : 30, r = compact ? 8.5 : 11;
+        var sx = PX(x, Y0), sy = PY(x, Y0, GP[x]), h = compact ? 22 : H < 420 ? 23 : 30, r = compact ? 8.5 : 11;   // shorter on a low stage, to stay clear of the readouts
         ctx.globalAlpha = a; ctx.strokeStyle = COL.amber; ctx.lineWidth = 1.5; line(sx, sy, sx, sy - h + r);
         ctx.fillStyle = COL.amber; ctx.beginPath(); ctx.arc(sx, sy - h, r, 0, 2 * PI); ctx.fill();
         text(s, sx, sy - h + 0.5, { size: compact ? 10 : 12, weight: 600, color: COL.navy, align: 'center', base: 'middle', head: true });
@@ -567,9 +574,9 @@
     }
     function layer(top, bot, col, am) {
         var x;
-        ctx.beginPath(); ctx.moveTo(sX(XV0), sY(top[XV0]));
-        for (x = XV0 + 1; x <= XV1; x++) ctx.lineTo(sX(x), sY(top[x]));
-        if (bot) for (x = XV1; x >= XV0; x--) ctx.lineTo(sX(x), sY(bot[x]));
+        ctx.beginPath(); ctx.moveTo(sX(XV0), sY(min(top[XV0], GR[XV0])));
+        for (x = XV0 + 1; x <= XV1; x++) ctx.lineTo(sX(x), sY(min(top[x], GR[x])));
+        if (bot) for (x = XV1; x >= XV0; x--) ctx.lineTo(sX(x), sY(min(bot[x], GR[x])));
         else { ctx.lineTo(sX(XV1), H + 4); ctx.lineTo(sX(XV0), H + 4); }
         ctx.closePath(); ctx.globalAlpha = am; ctx.fillStyle = col; ctx.fill();
     }
@@ -582,13 +589,15 @@
         }
         ctx.globalAlpha = am * 0.6; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]);
     }
+    var topLabel = 1;      // the top stratum's label makes way for the road once earthwork starts
     function inZone(x) { return x > labelZone[0] && x < labelZone[1]; }
     function hatch(am) {
         var k, x, xi, z, cx, cy;
         ctx.globalAlpha = am * 0.9; ctx.strokeStyle = 'rgba(255,255,255,0.24)'; ctx.lineWidth = 1; ctx.beginPath();
         for (k = 0; k < hBC.length; k += 3) {
             x = hBC[k]; xi = round(x); if (x < XV0 || x > XV1 || inZone(x) || GP[xi] - MP[xi] < 0.6) continue;
-            cy = sY(lerp(MP[xi], GP[xi], hBC[k + 1])); ctx.moveTo(sX(x - hBC[k + 2] / 2), cy); ctx.lineTo(sX(x + hBC[k + 2] / 2), cy);
+            z = lerp(MP[xi], GP[xi], hBC[k + 1]); if (z > GR[xi] - 0.14) continue;      // soil that has been excavated
+            cy = sY(z); ctx.moveTo(sX(x - hBC[k + 2] / 2), cy); ctx.lineTo(sX(x + hBC[k + 2] / 2), cy);
         }
         ctx.stroke();
         ctx.fillStyle = 'rgba(255,232,186,0.6)';
@@ -616,15 +625,15 @@
         var r = eio(sw) * 118, i;
         ctx.save();
         if (sw < 1) { ctx.beginPath(); for (i = 0; i < 4; i++) ctx.rect(sX(BH[i].x - r), 0, sX(BH[i].x + r) - sX(BH[i].x - r), H); ctx.clip(); }
-        layer(GP, MP, MAT[0].fill, am); layer(MP, WP, MAT[1].fill, am); layer(WP, HP, MAT[2].fill, am); layer(HP, null, MAT[3].fill, am);
+        layer(GR, MP, MAT[0].fill, am); layer(MP, WP, MAT[1].fill, am); layer(WP, HP, MAT[2].fill, am); layer(HP, null, MAT[3].fill, am);
         var g = ctx.createLinearGradient(0, sY(546.5), 0, H); g.addColorStop(0, 'rgba(19,16,55,0)'); g.addColorStop(1, 'rgba(19,16,55,0.72)');
         ctx.globalAlpha = am; ctx.fillStyle = g; ctx.fillRect(0, sY(546.5), W, H);
         hatch(am);
-        boundary(MP, GP, am); boundary(WP, null, am); boundary(HP, null, am);
+        boundary(MP, GR, am); boundary(WP, null, am); boundary(HP, null, am);
         var la = ph(sw, 0.7, 1) * am;
         if (la > 0) {
-            var xl = 86, xm = 96, zs = [(GP[xm] + MP[xm]) / 2, (MP[xm] + WP[xm]) / 2, (WP[xm] + HP[xm]) / 2, HP[xm] - 1.5];
-            for (i = 0; i < 4; i++) { ctx.globalAlpha = la * 0.95; text(compact ? MAT[i].short : MAT[i].name, sX(xl), sY(zs[i]), { size: compact ? 9.5 : 12, weight: 500, base: 'middle' }); }
+            var xl = 86, xm = 96, zs = [(GR[xm] + MP[xm]) / 2, (MP[xm] + WP[xm]) / 2, (WP[xm] + HP[xm]) / 2, HP[xm] - 1.5];
+            for (i = 0; i < 4; i++) { ctx.globalAlpha = la * 0.95 * (i ? 1 : topLabel); if (ctx.globalAlpha <= 0) continue; text(compact ? MAT[i].short : MAT[i].name, sX(xl), sY(zs[i]), { size: compact ? 9.5 : 12, weight: 500, base: 'middle' }); }
         }
         ctx.restore();
         if (sw < 1 && sw > 0) {
@@ -720,7 +729,7 @@
     }
 
     // ------------------------------------------------------------------ stage 3: design and DPR (same section)
-    function cutfill(xp) {
+    function cutfill(xp, am) {
         var k, x;
         for (k = 0; k < RUNS.length; k++) {
             var r = RUNS[k]; if (xp <= r.xa) continue;
@@ -728,9 +737,9 @@
             ctx.beginPath(); ctx.moveTo(sX(r.xa), sY(GP[r.xa]));
             for (x = r.xa + 1; x <= xe; x++) ctx.lineTo(sX(x), sY(GP[x]));
             for (x = xe; x >= r.xa; x--) ctx.lineTo(sX(x), sY(FR[x]));
-            ctx.closePath(); ctx.globalAlpha = 1; ctx.fillStyle = r.s > 0 ? 'rgba(181,210,66,0.36)' : 'rgba(214,92,124,0.5)'; ctx.fill();
+            ctx.closePath(); ctx.globalAlpha = am; ctx.fillStyle = r.s > 0 ? 'rgba(181,210,66,0.36)' : 'rgba(214,92,124,0.5)'; ctx.fill();
             if (r.dmax > 0.55 && r.xb - r.xa > 10) {
-                var la = ph(xp, r.xm, r.xm + 6); if (la <= 0) continue;
+                var la = ph(xp, r.xm, r.xm + 6) * am; if (la <= 0) continue;
                 var ym = sY((GP[r.xm] + FR[r.xm]) / 2), up = r.s > 0;
                 ctx.globalAlpha = la; ctx.strokeStyle = up ? COL.lime : '#f08aa6'; ctx.lineWidth = 1;
                 var ty = sY(max(GP[r.xm], FR[r.xm])) - (compact ? 16 : 22);
@@ -739,64 +748,71 @@
             }
         }
     }
-    function frlLine(xp, head) {
-        var x, xe = floor(xp), yp = sY(lerp(FR[xe], FR[min(LX, xe + 1)], xp - xe));
-        ctx.beginPath(); ctx.moveTo(sX(XA), sY(FR[XA]));
-        for (x = XA + 1; x <= xe; x++) ctx.lineTo(sX(x), sY(FR[x]));
+    function frAt(x) { var i = min(LX - 1, max(0, floor(x))); return lerp(FR[i], FR[i + 1], x - i); }
+    // the finished road level from x0 to xp: the amber design line
+    function frlLine(x0, xp, head, am) {
+        if (xp <= x0 + 0.01) return;
+        var x, yp = sY(frAt(xp));
+        ctx.beginPath(); ctx.moveTo(sX(x0), sY(frAt(x0)));
+        for (x = Math.ceil(x0 + 0.001); x <= floor(xp); x++) ctx.lineTo(sX(x), sY(FR[x]));
         ctx.lineTo(sX(xp), yp);
         ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = COL.amber;
-        ctx.globalAlpha = 0.14; ctx.lineWidth = 11; ctx.stroke(); ctx.globalAlpha = 0.22; ctx.lineWidth = 6.5; ctx.stroke();
-        ctx.globalAlpha = 1; ctx.lineWidth = compact ? 2.2 : 2.8; ctx.stroke(); ctx.lineCap = 'butt';
+        ctx.globalAlpha = 0.14 * am; ctx.lineWidth = 11; ctx.stroke(); ctx.globalAlpha = 0.22 * am; ctx.lineWidth = 6.5; ctx.stroke();
+        ctx.globalAlpha = am; ctx.lineWidth = compact ? 2.2 : 2.8; ctx.stroke(); ctx.lineCap = 'butt';
         if (head) {
             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sX(xp), yp, 4.2, 0, 2 * PI); ctx.fill();
             ctx.globalAlpha = 0.5; ctx.strokeStyle = COL.amber; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sX(xp), yp, 9, 0, 2 * PI); ctx.stroke();
         }
     }
-    function bridge(T) {
-        var k, p, f;
-        var CON = '#e9edf7', GIR = '#cbd3e6', EDGE = 'rgba(20,16,56,0.6)';
-        ctx.lineWidth = 1; ctx.strokeStyle = EDGE;
+    // The bridge, built up over `tau` seconds: footings, stems, caps, deck spans, railing.
+    // Solid for the design and for the finished work; a dashed ghost while it waits to be built.
+    var SPANS = [[136.5, 151.92], [152.08, 167.92], [168.08, 183.5]];
+    function bridgeParts(tau, a, ghost) {
+        if (tau <= 0 || a <= 0) return;
+        var k, p, f, CON = '#e9edf7', GIR = '#cbd3e6';
+        var paint = function (al) { ctx.globalAlpha = al * a; ctx.fill(); ctx.globalAlpha = ghost ? min(1, al * a * 2.8) : al * a; ctx.stroke(); };
+        ctx.lineWidth = 1; ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.8)' : 'rgba(20,16,56,0.6)';
+        if (ghost) ctx.setLineDash([3, 3]);
         for (k = 0; k < 4; k++) {                       // footings, then stems grow up from them
-            f = FND[k]; p = ph(T, 26.4 + 0.1 * k, 26.9 + 0.1 * k); if (p <= 0) continue;
-            var ft = f.z + f.h * eout(p);
-            ctx.globalAlpha = p; ctx.fillStyle = CON; ctx.beginPath(); wrect(f.x0, ft, f.x1, f.z); ctx.fill(); ctx.stroke();
-            var ps = ph(T, 26.9 + 0.1 * k, 27.8 + 0.1 * k); if (ps <= 0) continue;
+            f = FND[k]; p = ph(tau, 0.1 * k, 0.5 + 0.1 * k); if (p <= 0) continue;
+            ctx.fillStyle = CON; ctx.beginPath(); wrect(f.x0, f.z + f.h * eout(p), f.x1, f.z); paint(p);
+            var ps = ph(tau, 0.5 + 0.1 * k, 1.4 + 0.1 * k); if (ps <= 0) continue;
             var pier = k === 1 || k === 2, zt = pier ? SOF - 0.55 : SOF, zs = lerp(f.z + f.h, zt, eout(ps));
             var x0 = pier ? f.x - 0.55 : (k === 0 ? 135.2 : 183.5), x1 = pier ? f.x + 0.55 : (k === 0 ? 136.5 : 184.8);
-            ctx.globalAlpha = 1; ctx.beginPath(); wrect(x0, zs, x1, f.z + f.h); ctx.fill(); ctx.stroke();
-            var pc = ph(T, 27.75 + 0.1 * k, 28.0 + 0.1 * k); if (pc <= 0) continue;
-            ctx.globalAlpha = pc; ctx.beginPath();
+            ctx.beginPath(); wrect(x0, zs, x1, f.z + f.h); paint(1);
+            var pc = ph(tau, 1.35 + 0.1 * k, 1.6 + 0.1 * k); if (pc <= 0) continue;
+            ctx.beginPath();
             if (pier) wrect(f.x - 1.3, SOF, f.x + 1.3, SOF - 0.55); else wrect(k === 0 ? 135.2 : 184.3, FRL_B, k === 0 ? 135.7 : 184.8, SOF);
-            ctx.fill(); ctx.stroke();
+            paint(pc);
         }
-        var SPANS = [[136.5, 151.92], [152.08, 167.92], [168.08, 183.5]];
         for (k = 0; k < 3; k++) {
-            p = ph(T, 27.95 + 0.24 * k, 28.5 + 0.24 * k); if (p <= 0) continue;
-            ctx.save(); ctx.translate(0, -(1 - eout(p)) * 20); ctx.globalAlpha = p;
-            ctx.fillStyle = GIR; ctx.beginPath(); wrect(SPANS[k][0] + 0.25, FRL_B - 0.28, SPANS[k][1] - 0.25, SOF); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = CON; ctx.beginPath(); wrect(SPANS[k][0], FRL_B, SPANS[k][1], FRL_B - 0.28); ctx.fill(); ctx.stroke();
+            p = ph(tau, 1.55 + 0.24 * k, 2.1 + 0.24 * k); if (p <= 0) continue;
+            ctx.save(); ctx.translate(0, -(1 - eout(p)) * 20);
+            ctx.fillStyle = GIR; ctx.beginPath(); wrect(SPANS[k][0] + 0.25, FRL_B - 0.28, SPANS[k][1] - 0.25, SOF); paint(p);
+            ctx.fillStyle = CON; ctx.beginPath(); wrect(SPANS[k][0], FRL_B, SPANS[k][1], FRL_B - 0.28); paint(p);
             ctx.restore();
         }
-        p = ph(T, 28.7, 29.3);
-        if (p > 0) {
+        ctx.setLineDash([]);
+        p = ph(tau, 2.3, 2.9);
+        if (p > 0 && !ghost) {
             var xr = lerp(136.5, 183.5, eout(p)), x;
-            ctx.globalAlpha = 0.8; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; line(sX(136.5), sY(FRL_B + 1.0), sX(xr), sY(FRL_B + 1.0));
+            ctx.globalAlpha = 0.8 * a; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; line(sX(136.5), sY(FRL_B + 1.0), sX(xr), sY(FRL_B + 1.0));
             ctx.lineWidth = 1; ctx.beginPath();
             for (x = 136.5; x <= xr; x += 2.35) { ctx.moveTo(sX(x), sY(FRL_B + 1.0)); ctx.lineTo(sX(x), sY(FRL_B)); }
-            ctx.globalAlpha = 0.55; ctx.stroke();
+            ctx.globalAlpha = 0.55 * a; ctx.stroke();
         }
     }
-    function hfl(T) {
-        var p = ph(T, 29.2, 29.9), x; if (p <= 0) return;
+    function hfl(T, am) {
+        var p0 = ph(T, 29.2, 29.9), p = p0 * am, x; if (p <= 0) return;
         ctx.beginPath(); ctx.moveTo(sX(HFL_X0), sY(HFL));
         for (x = HFL_X0 + 1; x < HFL_X1; x++) ctx.lineTo(sX(x), sY(min(HFL, GP[x])));
         ctx.lineTo(sX(HFL_X1), sY(HFL)); ctx.closePath();
         var wg = ctx.createLinearGradient(0, sY(HFL), 0, sY(HFL - 3.6)); wg.addColorStop(0, 'rgba(40,150,225,0.5)'); wg.addColorStop(1, 'rgba(24,84,176,0.62)');
         ctx.globalAlpha = p; ctx.fillStyle = wg; ctx.fill();
         ctx.globalAlpha = p; ctx.strokeStyle = COL.skyL; ctx.lineWidth = 1.4; ctx.setLineDash([8, 4]);
-        line(sX(HFL_X0), sY(HFL), lerp(sX(HFL_X0), sX(HFL_X1), eout(p)), sY(HFL)); ctx.setLineDash([]);
+        line(sX(HFL_X0), sY(HFL), lerp(sX(HFL_X0), sX(HFL_X1), eout(p0)), sY(HFL)); ctx.setLineDash([]);
         if (compact) return;
-        var pl = ph(T, 29.6, 30.0); if (pl <= 0) return;
+        var pl = ph(T, 29.6, 30.0) * am; if (pl <= 0) return;
         ctx.globalAlpha = pl; text('HFL ' + HFL.toFixed(1), sX(160), sY(HFL) + 14, { size: 10.5, weight: 500, color: '#c9eeff', align: 'center' });
         var cx = sX(160), y1 = sY(HFL), y2 = sY(SOF);
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.1; line(cx, y1 - 1, cx, y2 + 1);
@@ -804,7 +820,13 @@
         ctx.beginPath(); ctx.moveTo(cx, y1 - 1); ctx.lineTo(cx - 3.5, y1 - 7); ctx.lineTo(cx + 3.5, y1 - 7); ctx.closePath(); ctx.fill();
         text((SOF - HFL).toFixed(2) + ' m', cx + 7, (y1 + y2) / 2, { size: 10.5, weight: 600, base: 'middle' });
     }
-    function band(T, a, xp, bandTop) {
+    function tick(x, y, r, a) {       // a bare check mark
+        ctx.globalAlpha = a; ctx.strokeStyle = COL.lime; ctx.lineWidth = max(1.4, r * 0.42); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(x - r * 0.9, y + r * 0.05); ctx.lineTo(x - r * 0.25, y + r * 0.7); ctx.lineTo(x + r, y - r * 0.75); ctx.stroke();
+        ctx.lineCap = 'butt';
+    }
+    // xp: the design line has reached here; xb: the road has been laid and its level checked up to here
+    function band(T, a, xp, bandTop, xb) {
         if (a <= 0) return;
         var bot = H - (compact ? 10 : 16), rh = (bot - bandTop) / 3, st = compact ? 40 : 20, x, k = 0, r;
         var fs = compact ? 9 : 11, off = (1 - a) * 14;
@@ -826,19 +848,23 @@
             var ga = ph(T, T2 + 0.55 + 0.06 * k, T2 + 0.85 + 0.06 * k);
             if (ga > 0) { ctx.globalAlpha = a * ga * 0.92; text(GP[x].toFixed(2), cx, bandTop + 1.5 * rh + 0.5 + (1 - ga) * 5, { size: fs, align: 'center', base: 'middle' }); }
             var fa = ph(xp, x - 3, x - 0.2);
-            if (xp > XA - 1 && fa > 0 && T >= 23.6) { ctx.globalAlpha = a * fa; text(FR[x].toFixed(2), cx, bandTop + 2.5 * rh + 0.5 + (1 - fa) * 5, { size: fs, weight: 600, align: 'center', base: 'middle', color: COL.amber }); }
+            if (xp > XA - 1 && fa > 0 && T >= 23.6) {
+                var ok = ph(xb, x - 2.6, x - 0.2), ty = bandTop + 2.5 * rh + 0.5 + (1 - fa) * 5, s = FR[x].toFixed(2);
+                ctx.globalAlpha = a * fa; text(s, cx, ty, { size: fs, weight: 600, align: 'center', base: 'middle', color: ok > 0.5 ? COL.lime : COL.amber });
+                if (ok > 0) tick(cx + ctx.measureText(s).width / 2 + (compact ? 6 : 8), ty, compact ? 3.2 : 4, a * fa * ok);
+            }
         }
         ctx.restore();
     }
     function stations(a, bandTop) {
         var x; ctx.globalAlpha = a * 0.13; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath();
-        for (x = XA; x <= XB; x += 20) { ctx.moveTo(sX(x) + 0.5, sY(GP[x]) + 3); ctx.lineTo(sX(x) + 0.5, bandTop); }
+        for (x = XA; x <= XB; x += 20) { ctx.moveTo(sX(x) + 0.5, sY(GR[x]) + 3); ctx.lineTo(sX(x) + 0.5, bandTop); }
         ctx.stroke();
     }
     var CRUST = [['BC', '30 mm', '#3b3f60', 9], ['DBM', '50 mm', '#5a5f86', 12], ['WMM', '250 mm', '#8f99b0', 24], ['GSB', '200 mm', '#b6975f', 20], ['Subgrade', '500 mm', '#705842', 28]];
     function crustInset(T) {
         if (!wideInset) return;
-        var a = min(ph(T, 27.2, 27.6), 1 - ph(T, T3 - 0.1, T3 + 0.3)); if (a <= 0) return;
+        var a = min(ph(T, 27.2, 27.6), 1 - ph(T, T4S - 0.1, T4S + 0.3)); if (a <= 0) return;
         var w = 276, x = W - w - 18, y = 16, h = min(146, insetBottom - y), k, yy = y + h - 14, lw = 96, lx = x + 16;
         panel(x, y, w, h, a);
         ctx.globalAlpha = a; text('Pavement crust, approaches', x + 14, y + 22, { size: 12.5, weight: 600, head: true });
@@ -854,18 +880,163 @@
             ctx.globalAlpha = a * p * 0.68; text(c[1], x + 128 + ctx.measureText(c[0]).width + 7, ly, { size: 11 });
         }
     }
+
+    // ------------------------------------------------------------------ stage 4: supervision (the design is built, tested and checked)
+    // Times in this block are seconds after T4S.
+    var C_BR0 = 0.9, C_BRR = 0.52;                         // bridge: start, and speed against the design sequence
+    var C_EARTH = [4.4, 6.4], C_GRAN = [6.4, 7.5], C_BIT = [7.5, 8.7], C_VEH = [8.9, 10.6];
+    var APP = [[XA, 136], [184, XB]], GRAN = 0.45;         // the two approaches; thickness of the granular layers
+    function onApproach(x) { return (x >= XA && x <= 136) || (x >= 184 && x <= XB); }
+    var FILLS = [];                                        // stretches where the formation is above the ground: embankment
+    (function () {
+        var k, x, xs = -1;
+        for (k = 0; k < 2; k++) for (x = APP[k][0]; x <= APP[k][1] + 1; x++) {
+            var f = x <= APP[k][1] && FM[x] > GP[x] + 0.03;
+            if (f && xs < 0) xs = x;
+            if (!f && xs >= 0) { if (x - 1 > xs) FILLS.push([xs, x - 1]); xs = -1; }
+        }
+    })();
+    function groundNow(T) {        // the ground as work proceeds: the road box is cut down to formation level
+        var pe = ease(ph(T - T4S, C_EARTH[0], C_EARTH[1] - 0.3)), x;
+        GD.set(GP);
+        if (pe > 0) for (x = XA; x <= XB; x++) { if (onApproach(x) && GP[x] > FM[x]) GD[x] = GP[x] - (GP[x] - FM[x]) * pe; }
+        return GD;
+    }
+    function pegs(t) {             // setting out: a peg and flag on the centre line of each foundation
+        var k;
+        for (k = 0; k < 4; k++) {
+            var a = min(ph(t, 0.12 + 0.1 * k, 0.3 + 0.1 * k), 1 - ph(t, 1.0 + 0.2 * k, 1.35 + 0.2 * k)); if (a <= 0) continue;
+            var x = sX(FND[k].x), y = sY(max(GP[FND[k].x], LWL)), h = (compact ? 15 : 21) * pop(c01(a * 1.4));
+            ctx.globalAlpha = a; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; line(x, y, x, y - h);
+            ctx.fillStyle = COL.amber; ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + h * 0.48, y - h * 0.8); ctx.lineTo(x, y - h * 0.6); ctx.closePath(); ctx.fill();
+        }
+    }
+    function roller(x, y, a) {     // (x, y): the surface being rolled
+        var k = compact ? 0.72 : 1;
+        ctx.globalAlpha = a; ctx.fillStyle = COL.amber; rr(x - 16 * k, y - 15 * k, 17 * k, 9 * k, 2 * k); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x - 2.5 * k, y - 4.6 * k, 4.6 * k, 0, 2 * PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(x - 13.5 * k, y - 3.6 * k, 3.6 * k, 0, 2 * PI); ctx.fill();
+        ctx.fillStyle = COL.navy; ctx.beginPath(); ctx.arc(x - 2.5 * k, y - 4.6 * k, 1.5 * k, 0, 2 * PI); ctx.fill();
+    }
+    function construction(T) {
+        var t = T - T4S, x, k, pe = ph(t, C_EARTH[0], C_EARTH[1]), pg = ph(t, C_GRAN[0], C_GRAN[1]), pb = ph(t, C_BIT[0], C_BIT[1]);
+        var xg = lerp(XA, XB, pg), xb = lerp(XA, XB, pb), e = ease(pe);
+        if (pe > 0) {              // embankment, raised to formation level
+            ctx.globalAlpha = 1; ctx.fillStyle = '#84684a'; ctx.beginPath();
+            for (k = 0; k < FILLS.length; k++) {
+                var f = FILLS[k];
+                ctx.moveTo(sX(f[0]), sY(GP[f[0]]));
+                for (x = f[0]; x <= f[1]; x++) ctx.lineTo(sX(x), sY(GP[x] + (FM[x] - GP[x]) * e));
+                for (x = f[1]; x >= f[0]; x--) ctx.lineTo(sX(x), sY(GP[x]));
+                ctx.closePath();
+            }
+            ctx.fill();
+        }
+        if (pg > 0) {              // granular sub-base and base, laid from A towards A′
+            ctx.globalAlpha = 1; ctx.fillStyle = '#b3ad9b'; ctx.beginPath();
+            for (k = 0; k < 2; k++) {
+                var g0 = APP[k][0], g1 = min(APP[k][1], xg); if (g1 <= g0) continue;
+                ctx.moveTo(sX(g0), sY(FM[g0]));
+                for (x = g0; x <= floor(g1); x++) ctx.lineTo(sX(x), sY(FM[x] + GRAN));
+                ctx.lineTo(sX(g1), sY(frAt(g1) - CRT + GRAN)); ctx.lineTo(sX(g1), sY(frAt(g1) - CRT));
+                for (x = floor(g1); x >= g0; x--) ctx.lineTo(sX(x), sY(FM[x]));
+                ctx.closePath();
+            }
+            ctx.fill();
+        }
+        bridgeParts((t - C_BR0) * C_BRR, 1, false);     // the bridge as built
+        if (pb > 0) {              // bituminous courses on the approaches, then the finished surface across the whole length
+            ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1f2238'; ctx.lineWidth = compact ? 3.4 : 4.4; ctx.beginPath();
+            for (k = 0; k < 2; k++) {
+                var b0 = APP[k][0], b1 = min(APP[k][1], xb), o = ctx.lineWidth / 2; if (b1 <= b0) continue;
+                ctx.moveTo(sX(b0), sY(FR[b0]) + o);
+                for (x = b0 + 1; x <= floor(b1); x++) ctx.lineTo(sX(x), sY(FR[x]) + o);
+                ctx.lineTo(sX(b1), sY(frAt(b1)) + o);
+            }
+            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sX(XA), sY(FR[XA]));
+            for (x = XA + 1; x <= floor(xb); x++) ctx.lineTo(sX(x), sY(FR[x]));
+            ctx.lineTo(sX(xb), sY(frAt(xb)));
+            ctx.globalAlpha = 0.9; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.stroke();
+        }
+        if (pg > 0 && pg < 1 && onApproach(round(xg))) roller(sX(xg), sY(frAt(xg) - CRT + GRAN), min(1, pg * 9, (1 - pg) * 9));
+        if (pb > 0 && pb < 1) roller(sX(xb), sY(frAt(xb)), min(1, pb * 9, (1 - pb) * 9));
+    }
+    function vehicle(t) {
+        var p = ph(t, C_VEH[0], C_VEH[1]); if (p <= 0 || p >= 1) return;
+        var q = lerp(p, ease(p), 0.5), x = lerp(XA + 3, XB - 3, q), L = min(34, max(16, 7.5 * cam.S)), hgt = L * 0.42, r = hgt * 0.24;
+        var cx = sX(x), by = sY(frAt(x)) - r * 0.9, a = min(1, p * 9, (1 - p) * 9), w;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = '#fff'; rr(cx - L / 2, by - hgt, L * 0.62, hgt * 0.78, 1.5); ctx.fill();                        // load body
+        ctx.fillStyle = COL.amber; rr(cx - L / 2 + L * 0.65, by - hgt * 0.74, L * 0.31, hgt * 0.52, 1.5); ctx.fill();   // cab
+        ctx.fillStyle = COL.navy; ctx.fillRect(cx - L / 2 + L * 0.8, by - hgt * 0.66, L * 0.12, hgt * 0.2);
+        ctx.fillStyle = '#c9d0e4'; ctx.fillRect(cx - L / 2 + 1, by - hgt * 0.24, L - 3, hgt * 0.1);
+        var wx = [cx - L * 0.28, cx + L * 0.3];
+        for (w = 0; w < 2; w++) {
+            ctx.fillStyle = COL.navy; ctx.beginPath(); ctx.arc(wx[w], by - r * 0.1, r, 0, 2 * PI); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+        }
+    }
+    function check(x, y, r, a) {   // a check mark on a lime disc
+        ctx.globalAlpha = a; ctx.fillStyle = COL.lime; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * PI); ctx.fill();
+        ctx.strokeStyle = COL.navy; ctx.lineWidth = max(1.4, r * 0.28); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(x - r * 0.44, y + r * 0.04); ctx.lineTo(x - r * 0.1, y + r * 0.38); ctx.lineTo(x + r * 0.48, y - r * 0.32); ctx.stroke();
+        ctx.lineCap = 'butt';
+    }
+    // quality checks, each pinned to the work it passes
+    var TAGS = [
+        { t: 2.0, x: 152, z: FND[1].z + 0.45, text: 'Founding rock checked' },
+        { t: 3.7, x: 152, z: 552.4, text: 'Cubes 36 N/mm²' },
+        { t: 6.1, x: 176, z: FRL_B - 0.12, text: 'Deck level ' + FRL_B.toFixed(2) },
+        { t: 6.7, x: 212, z: (GP[212] + FM[212]) / 2, text: 'Compaction 98%' },
+        { t: 8.75, x: 108, z: FR[108] - 0.25, text: 'Crust thickness checked' }
+    ];
+    function tags(t) {
+        var k, narrow = cam.S < 5;
+        for (k = 0; k < TAGS.length; k++) {
+            var g = TAGS[k], p = ph(t, g.t, g.t + 0.35); if (p <= 0) continue;
+            var a = p; if (narrow && !compact && k === 1) a *= 1 - ph(t, TAGS[2].t - 0.35, TAGS[2].t - 0.05);   // makes way for the next tag where both will not fit
+            if (a <= 0) continue;
+            var tx = sX(g.x), ty = sY(g.z), s = pop(p);
+            if (compact) { check(tx, ty, 6.2 * s, a); continue; }
+            ctx.font = '500 11px ' + F_BODY;
+            var w = ctx.measureText(g.text).width + 37, h = 22, cx, cy, ex, ey;
+            if (k === 0) { cx = sX(FND[1].x0) - 14 - w / 2; cy = ty + 2; ex = cx + w / 2; ey = cy; }
+            else {
+                if (k === 1) { cx = narrow ? sX(160) : sX(146); cy = sY(FRL_B + 2.7); }
+                else if (k === 2) { cx = narrow ? sX(160) : sX(175); cy = sY(FRL_B + 2.7); }
+                else { cx = tx; cy = sY(FR[g.x]) - 36; }
+                ex = min(max(tx, cx - w / 2 + 12), cx + w / 2 - 12); ey = cy + h / 2;
+            }
+            ctx.globalAlpha = a * 0.8; ctx.strokeStyle = COL.lime; ctx.lineWidth = 1; line(ex, ey, tx, ty);
+            ctx.fillStyle = COL.lime; ctx.beginPath(); ctx.arc(tx, ty, 2.6, 0, 2 * PI); ctx.fill();
+            ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+            ctx.globalAlpha = a; rr(-w / 2, -h / 2, w, h, 11); ctx.fillStyle = 'rgba(15,12,44,0.94)'; ctx.fill();
+            ctx.strokeStyle = 'rgba(181,210,66,0.7)'; ctx.lineWidth = 1; ctx.stroke();
+            check(-w / 2 + 12.5, 0, 6.5, a);
+            ctx.globalAlpha = a; text(g.text, -w / 2 + 25, 0.5, { size: 11, weight: 500, base: 'middle' });
+            ctx.restore();
+        }
+    }
+
     function design(T, bandTop, bandA) {
-        var pp = ph(T, 23.6, 26.6), xp = lerp(XA, XB, lerp(pp, ease(pp), 0.7));
+        var pp = ph(T, 23.6, 26.6), xp = lerp(XA, XB, lerp(pp, ease(pp), 0.7)), c4 = T >= T4S, t = T - T4S;
+        var g = c4 ? ease(ph(t, 0, 0.7)) : 0;                         // the drawing recedes once work starts on site
+        var pb = c4 ? ph(t, C_BIT[0], C_BIT[1]) : 0, xb = lerp(XA, XB, pb);
         stations(bandA, bandTop);
-        if (pp > 0) cutfill(xp);
-        hfl(T);
-        bridge(T);
-        if (pp > 0) frlLine(xp, pp < 1);
-        band(T, bandA, pp > 0 ? xp : XA - 2, bandTop);
+        if (pp > 0 && g < 1) cutfill(xp, 1 - g);
+        if (g < 1) { hfl(T, 1 - g); bridgeParts(T - 26.4, 1 - g, false); }
+        if (g > 0) bridgeParts(T - 26.4, 0.22 * g, true);
+        if (c4) { pegs(t); construction(T); }
+        if (pp > 0 && pb < 1) frlLine(xb, xp, pp < 1, 1 - 0.4 * g);
+        if (c4) { vehicle(t); tags(t); }
+        band(T, bandA, pp > 0 ? xp : XA - 2, bandTop, pb > 0 ? xb : XA - 9);
     }
     function drawSec(T) {
         var dim = ease(ph(T, T2, T2 + 0.7)), bandA = ease(ph(T, T2 + 0.15, T2 + 0.75)), bandTop = round(H * (compact ? 0.83 : 0.815));
         var sw = ph(T, 19.9, 21.2);
+        GR = T >= T4S ? groundNow(T) : GP;
+        topLabel = 1 - ph(T - T4S, C_EARTH[0] - 0.5, C_EARTH[0] + 0.1);
         ridges(1); face(1, 1);
         nalaWater();
         if (sw > 0) strata(sw, 1 - 0.42 * dim);
@@ -876,6 +1047,7 @@
         if (T >= T2) design(T, bandTop, bandA);
         flag(XA, 'A', 1); flag(XB, 'A′', 1);
         logInset(T); crustInset(T);
+        GR = GP;
     }
 
     // ------------------------------------------------------------------ readouts, caption, stage tabs
@@ -883,14 +1055,16 @@
     function count(T, a, b, v) { return round(v * eout(ph(T, a, b))); }
     function readouts(items, a) {
         if (a <= 0) return;
-        var n = compact ? min(2, items.length) : items.length, x = compact ? 14 : 20, y = compact ? 52 : 64, cw = compact ? (W - 28) / 2 : 168, i;
+        var n = compact ? min(2, items.length) : items.length, x = compact ? 14 : 20, y = compact ? 52 : 64, cw = compact ? (W - 28) / 2 : min(168, (W - 40) / 3), i;
         for (i = 0; i < n; i++) {
             ctx.globalAlpha = a * 0.62; text(items[i][0], x + i * cw, y, { size: compact ? 10 : 11.5, base: 'top' });
             ctx.globalAlpha = a; text(items[i][1], x + i * cw, y + (compact ? 14 : 17), { size: compact ? 15 : 19, weight: 600, base: 'top', head: true });
         }
     }
+    var BILLS = [[2.6, 0.62], [4.9, 1.22], [7.0, 1.43], [9.3, 1.34]];     // running bills certified, ₹ crore, at seconds after T4S
     function hud(T) {
         var a, i, b;
+        if (mini && compact) return;     // the small stage in the introduction has no room for readouts
         if (T < T1 + 0.5) {
             var sp = c01((T - T_L0) / (T_LEND - T_L0)), g = 0;
             for (i = 0; i < GCP.length; i++) if (T > 0.25 + i * 0.14 + 0.2) g++;
@@ -906,7 +1080,7 @@
                 else if (r0.n && T >= r0.t) rw = r0;
             }
             if (inRock && !rw) rw = b.rows[b.rows.length - 1];
-            readouts([[b.name + ', depth', d.toFixed(2) + ' m'], [rw && !rw.n ? 'Rock quality' : 'SPT value', rw ? rw.val : '–'], ['Stratum', d <= 0 ? '–' : MAT[(b.g - d) > b.m ? 0 : (b.g - d) > b.w ? 1 : (b.g - d) > b.h ? 2 : 3].name]], grp(T, T2S + 0.15, 19.9));
+            readouts([[b.name + ', depth', d.toFixed(2) + ' m'], [rw && !rw.n ? 'Rock quality' : 'SPT value', rw ? rw.val : '–'], ['Stratum', d <= 0 ? '–' : MAT[(b.g - d) > b.m ? 0 : (b.g - d) > b.w ? 1 : (b.g - d) > b.h ? 2 : 3][W < 760 ? 'short' : 'name']]], grp(T, T2S + 0.15, 19.9));
         } else if (T < T2 + 0.3) {
             readouts([['Boreholes drilled', '4'], ['Total depth', totalDrilled.toFixed(1) + ' m'], ['Foundations on', 'Rock']].slice(0, T > 21.5 ? 3 : 2), grp(T, 19.95, T2 + 0.3));
         } else if (T < 26.7) {
@@ -915,18 +1089,22 @@
             readouts([['Chainage', '0/' + ('00' + round(xp - XA)).slice(-3)], ['Finished RL', FR[xi].toFixed(2) + ' m'], ['Gradient', (abs(gr) < 0.05 ? 'Level' : (gr > 0 ? '+' : '−') + abs(gr).toFixed(1) + '%')]], grp(T, T2 + 0.45, 26.7));
         } else if (T < 30.35) {
             readouts([['Bridge', '3 × 16 m spans'], ['Clearance over HFL', T > 29.7 ? (SOF - HFL).toFixed(2) + ' m' : '–'], ['Deck level', 'RL ' + FRL_B.toFixed(2) + ' m']], grp(T, 26.8, 30.35));
+        } else if (T < T4S + 0.4) {
+            readouts([['Estimate', '₹ ' + (count(T, 31.0, 32.4, 472) / 100).toFixed(2) + ' crore'], ['Concrete', count(T, 30.7, 31.8, 815).toLocaleString('en-IN') + ' m³'], ['Earthwork', count(T, 30.5, 31.6, 3480).toLocaleString('en-IN') + ' m³']], min(ph(T, 30.45, 30.75), 1 - ph(T, T4S + 0.1, T4S + 0.4)));
         } else {
-            readouts([['Estimate', '₹ ' + (count(T, 31.0, 32.4, 472) / 100).toFixed(2) + ' crore'], ['Concrete', count(T, 30.7, 31.8, 815).toLocaleString('en-IN') + ' m³'], ['Earthwork', count(T, 30.5, 31.6, 3480).toLocaleString('en-IN') + ' m³']], min(ph(T, 30.45, 30.75), 1));
+            var t = T - T4S, paid = 0;
+            for (i = 0; i < BILLS.length; i++) paid += BILLS[i][1] * eout(ph(t, BILLS[i][0], BILLS[i][0] + 0.6));
+            readouts([['Work done', round(100 * ph(t, C_BR0, C_BIT[1])) + '%'], ['Tests passed', round(42 * ph(t, 1.5, 8.9)) + ' of 42'], ['Bills certified', '₹ ' + paid.toFixed(2) + ' crore']], ph(T, T4S + 0.45, T4S + 0.75));
         }
     }
     function caption(T) {
-        var i, c = compact;
+        var i, c = compact, t = T - T4S;
         if (T < T_TO) return c ? 'Setting ground control' : 'Setting out ground control';
         if (T < T_L0) return 'Drone taking off';
         if (T < T_LEND) return 'Drone flight, line ' + min(NL, floor((T - T_L0) / (T_LINE + T_TURN)) + 1) + ' of ' + NL;
         if (T < 7.7) return c ? 'Building surface model' : 'Building the surface model';
         if (T < 9.0) return c ? 'Drawing 1 m contours' : 'Drawing contours at 1 m';
-        if (T < T1) return c ? 'Marking section A\u2013A\u2032' : 'Marking section A\u2013A\u2032 on the bridge axis';
+        if (T < T1) return c ? 'Marking section A–A′' : 'Marking section A–A′ on the bridge axis';
         if (T < T2S) return 'Cutting the section';
         for (i = 0; i < 4; i++) if (T < BH[i].t1 + 0.2) return c ? 'Drilling ' + BH[i].name + ' of 4' : 'Drilling ' + BH[i].name + ' at ' + BH[i].at.charAt(0).toLowerCase() + BH[i].at.slice(1);
         if (T < 21.3) return c ? 'Joining the strata' : 'Joining the strata between boreholes';
@@ -936,24 +1114,31 @@
         if (T < 29.2) return c ? 'Founding bridge on rock' : 'Founding the bridge on rock';
         if (T < 30.4) return c ? 'Checking flood clearance' : 'Checking clearance over high flood level';
         if (T < 32.6) return c ? 'Working out the cost' : 'Working out quantities and cost';
-        return c ? 'DPR ready for sanction' : 'DPR ready for technical sanction';
+        if (T < T4S) return c ? 'DPR ready for sanction' : 'DPR ready for technical sanction';
+        if (t < 1.0) return c ? 'Setting out the work' : 'Setting out the work on site';
+        if (t < 2.5) return c ? 'Checking founding rock' : 'Checking the founding rock';
+        if (t < 4.4) return c ? 'Testing pier concrete' : 'Testing concrete as the piers rise';
+        if (t < C_EARTH[1]) return c ? 'Deck and earthwork' : 'Checking deck levels and compaction';
+        if (t < C_BIT[1] + 0.1) return c ? 'Laying the pavement' : 'Laying and testing the pavement';
+        if (t < C_VEH[1]) return 'Open to traffic';
+        return c ? 'Work completed' : 'Completed and handed over';
     }
-    var lastCap = null, lastStage = -1, lastP = [-1, -1, -1];
+    var lastCap = null, lastStage = -1, lastP = [-1, -1, -1, -1];
     function ui(T) {
-        var s = T < T1 ? 0 : T < T2 ? 1 : 2, c = caption(T), i;
+        var s = T < T1 ? 0 : T < T2 ? 1 : T < T4S ? 2 : 3, c = caption(T), i;
         if (capEl && c !== lastCap) { capEl.textContent = c; lastCap = c; }
         if (s !== lastStage) {
             steps.forEach(function (b, k) { b.classList.toggle('is-active', k === s); if (k === s) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
             lastStage = s;
         }
-        for (i = 0; i < steps.length; i++) {
+        for (i = 0; i < steps.length && i < 4; i++) {
             var p = i < s ? 1 : i > s ? 0 : c01((T - ST0[i]) / (ST1[i] - ST0[i]));
             if (abs(p - lastP[i]) > 0.003 || (p !== lastP[i] && (p === 0 || p === 1))) { steps[i].style.setProperty('--p', p.toFixed(3)); lastP[i] = p; }
         }
     }
 
     // ------------------------------------------------------------------ frame
-    var clock = 0, playing = false, userPaused = false, inView = false, raf = 0, last = 0;
+    var clock = 0, playing = false, userPaused = false, inView = false, ready = false, raf = 0, last = 0;
     function draw() {
         if (!W || !H) return;
         var T = clock;
@@ -963,7 +1148,7 @@
         var q = setCam(T);
         if (q < 1) draw3D(T, q); else drawSec(T);
         hud(T);
-        var f = max(1 - ph(T, 0, 0.45), ph(T, T3, TEND));
+        var f = max(1 - ph(T, 0, 0.45), ph(T, T4, TEND));
         if (f > 0) bg(ease(f));
         ctx.globalAlpha = 1;
         ui(T);
@@ -972,15 +1157,15 @@
         raf = 0; if (!playing) return;
         var raw = last ? (ts - last) / 1000 : 0, dt = min(0.05, raw); last = ts;
         if (raw > 0 && raw < 0.5) { fAcc += raw; fN++; if (fN >= 50) { if (fAcc / fN > 0.04 && quality < 2) { quality++; resize(true); } fAcc = 0; fN = 0; } }
-        clock += dt;
-        // with animations switched off on the device, play once and stop on the finished drawing
-        if (reduce && clock >= STILL[2]) { clock = STILL[2]; draw(); setPaused(true); return; }
-        if (clock >= TEND) clock = 0;
+        clock += dt * rate;
+        // with animations switched off on the device, play once and stop on the finished work
+        if (reduce && clock >= STILL[LAST]) { clock = STILL[LAST]; draw(); setPaused(true); return; }
+        if (clock >= TEND) { clock = 0; try { root.dispatchEvent(new CustomEvent('showcase:end')); } catch (e) { /* older browsers: no event */ } }
         draw();
         raf = window.requestAnimationFrame(frame);
     }
     function sync() {
-        var should = inView && !userPaused && !document.hidden;
+        var should = ready && inView && !userPaused && !document.hidden;
         if (should && !playing) { playing = true; last = 0; raf = window.requestAnimationFrame(frame); }
         else if (!should && playing) { playing = false; if (raf) window.cancelAnimationFrame(raf); raf = 0; }
         root.classList.toggle('is-paused', userPaused);
@@ -1005,7 +1190,7 @@
     });
     if (toggle) {
         toggle.addEventListener('click', function () {
-            if (userPaused && (clock >= STILL[2] - 0.05 || root.classList.contains('needs-play'))) clock = 0;   // finished or not yet started: play from the top
+            if (userPaused && (clock >= STILL[LAST] - 0.05 || root.classList.contains('needs-play'))) clock = 0;   // finished or not yet started: play from the top
             setPaused(!userPaused);
             if (userPaused) draw();
         });
@@ -1020,9 +1205,18 @@
     if ('ResizeObserver' in window) new ResizeObserver(function () { resize(); }).observe(canvas); else window.addEventListener('resize', function () { resize(); });
     if (mq && mq.addEventListener) mq.addEventListener('change', function (e) { reduce = e.matches; if (reduce && !userPaused) setPaused(true); });
     if (reduce) { clock = STILL[0]; setPaused(true); root.classList.add('needs-play'); if (playBtn) playBtn.hidden = false; }
-    resize(); sync();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (W) { layout(); draw(); } });
+    resize();
+    // start once the lettering is available, so the drawing never opens in a fallback typeface
+    function begin() { if (ready) return; ready = true; if (W) { layout(); draw(); } sync(); }
+    if (document.fonts && document.fonts.load && window.Promise) {
+        Promise.all([document.fonts.load('500 12px Archivo'), document.fonts.load('600 12px Archivo'), document.fonts.load('600 19px Poppins')]).then(begin, begin);
+        window.setTimeout(begin, 1500);
+    } else { begin(); }
     root.classList.add('is-live');
-    // small hook for testing and for jumping to a moment from the console
-    root.showcase = { seek: function (t) { clock = t; draw(); }, duration: TEND, stages: ST0 };
+    // hooks for the introduction slider (js/main.js), and for jumping to a moment from the console
+    root.showcase = {
+        seek: function (t) { clock = t; draw(); },
+        restart: function () { if (!userPaused) { clock = 0; draw(); } },
+        duration: TEND / rate, stages: ST0
+    };
 })();
