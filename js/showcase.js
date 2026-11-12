@@ -2,7 +2,8 @@
 // One bridge site drawn in three stages on a canvas: drone survey (3D), geotechnical
 // investigation and design (section A–A′ through the same ground).
 // Dependency-free. Every frame is a pure function of the timeline position, so the
-// piece can be paused, jumped between stages and shown as a still for reduced motion.
+// piece can be paused and jumped between stages. Where the visitor's device has animations
+// switched off it does not start by itself: it shows a still and a Play button instead.
 
 (function () {
     'use strict';
@@ -13,6 +14,7 @@
     if (!ctx) return;
     var capEl = root.querySelector('[data-caption]');
     var toggle = root.querySelector('[data-toggle]');
+    var playBtn = root.querySelector('[data-play]');
     var steps = [].slice.call(root.querySelectorAll('[data-stage]'));
     var mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
     var reduce = !!(mq && mq.matches);
@@ -945,7 +947,7 @@
             lastStage = s;
         }
         for (i = 0; i < steps.length; i++) {
-            var p = i < s ? 1 : i > s ? 0 : (reduce ? 1 : c01((T - ST0[i]) / (ST1[i] - ST0[i])));
+            var p = i < s ? 1 : i > s ? 0 : c01((T - ST0[i]) / (ST1[i] - ST0[i]));
             if (abs(p - lastP[i]) > 0.003 || (p !== lastP[i] && (p === 0 || p === 1))) { steps[i].style.setProperty('--p', p.toFixed(3)); lastP[i] = p; }
         }
     }
@@ -961,7 +963,7 @@
         var q = setCam(T);
         if (q < 1) draw3D(T, q); else drawSec(T);
         hud(T);
-        var f = reduce ? 0 : max(1 - ph(T, 0, 0.45), ph(T, T3, TEND));
+        var f = max(1 - ph(T, 0, 0.45), ph(T, T3, TEND));
         if (f > 0) bg(ease(f));
         ctx.globalAlpha = 1;
         ui(T);
@@ -970,15 +972,24 @@
         raf = 0; if (!playing) return;
         var raw = last ? (ts - last) / 1000 : 0, dt = min(0.05, raw); last = ts;
         if (raw > 0 && raw < 0.5) { fAcc += raw; fN++; if (fN >= 50) { if (fAcc / fN > 0.04 && quality < 2) { quality++; resize(true); } fAcc = 0; fN = 0; } }
-        clock += dt; if (clock >= TEND) clock = 0;
+        clock += dt;
+        // with animations switched off on the device, play once and stop on the finished drawing
+        if (reduce && clock >= STILL[2]) { clock = STILL[2]; draw(); setPaused(true); return; }
+        if (clock >= TEND) clock = 0;
         draw();
         raf = window.requestAnimationFrame(frame);
     }
     function sync() {
-        var should = inView && !userPaused && !document.hidden && !reduce;
+        var should = inView && !userPaused && !document.hidden;
         if (should && !playing) { playing = true; last = 0; raf = window.requestAnimationFrame(frame); }
         else if (!should && playing) { playing = false; if (raf) window.cancelAnimationFrame(raf); raf = 0; }
-        root.classList.toggle('is-paused', userPaused || reduce);
+        root.classList.toggle('is-paused', userPaused);
+    }
+    function setPaused(p) {
+        userPaused = p;
+        if (toggle) { toggle.setAttribute('aria-pressed', p ? 'true' : 'false'); toggle.setAttribute('aria-label', p ? 'Play animation' : 'Pause animation'); }
+        if (!p) { root.classList.remove('needs-play'); if (playBtn) playBtn.hidden = true; }
+        sync();
     }
     function resize(force) {
         var r = canvas.getBoundingClientRect(), w = round(r.width), h = round(r.height);
@@ -990,24 +1001,25 @@
     }
 
     steps.forEach(function (b, k) {
-        b.addEventListener('click', function () { clock = reduce || userPaused ? STILL[k] : ST0[k] + (k === 0 ? 0 : 0.01); draw(); });
+        b.addEventListener('click', function () { clock = userPaused ? STILL[k] : ST0[k] + (k === 0 ? 0 : 0.01); draw(); });
     });
     if (toggle) {
         toggle.addEventListener('click', function () {
-            userPaused = !userPaused;
-            toggle.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
-            toggle.setAttribute('aria-label', userPaused ? 'Play animation' : 'Pause animation');
-            sync();
+            if (userPaused && (clock >= STILL[2] - 0.05 || root.classList.contains('needs-play'))) clock = 0;   // finished or not yet started: play from the top
+            setPaused(!userPaused);
+            if (userPaused) draw();
         });
-        if (reduce) toggle.hidden = true;
+    }
+    if (playBtn) {
+        playBtn.addEventListener('click', function () { clock = 0; setPaused(false); if (toggle) toggle.focus(); });
     }
     if ('IntersectionObserver' in window) {
         new IntersectionObserver(function (es) { inView = es[es.length - 1].isIntersecting; sync(); }, { threshold: 0.2 }).observe(canvas);
     } else { inView = true; }
     document.addEventListener('visibilitychange', sync);
     if ('ResizeObserver' in window) new ResizeObserver(function () { resize(); }).observe(canvas); else window.addEventListener('resize', function () { resize(); });
-    if (mq && mq.addEventListener) mq.addEventListener('change', function (e) { reduce = e.matches; if (reduce) clock = STILL[lastStage < 0 ? 0 : lastStage]; if (toggle) toggle.hidden = reduce; sync(); draw(); });
-    if (reduce) clock = STILL[0];
+    if (mq && mq.addEventListener) mq.addEventListener('change', function (e) { reduce = e.matches; if (reduce && !userPaused) setPaused(true); });
+    if (reduce) { clock = STILL[0]; setPaused(true); root.classList.add('needs-play'); if (playBtn) playBtn.hidden = false; }
     resize(); sync();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (W) { layout(); draw(); } });
     root.classList.add('is-live');
