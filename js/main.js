@@ -137,6 +137,104 @@
         apply();
     }
 
+    // Photo viewer: a project card opens that project's photos, a gallery photo opens the whole gallery.
+    // Arrows, arrow keys and swipes move between photos; Esc, the Close button or a click outside the
+    // photo closes it, and so does the Back button (handy on a phone). Browsers without <dialog> just
+    // follow the link to the photo.
+    var shots = document.querySelectorAll('a[data-photos], a[data-set]');
+    if (shots.length && window.HTMLDialogElement) {
+        var box = null, boxImg, boxCap, boxTitle, boxCount, boxPrev, boxNext, boxStage, boxFig;
+        var photos = [], at = 0, opener = null;
+        var inHistory = false;   // true while a history entry stands for the open viewer, so that Back closes it
+        var arrow = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>'; };
+        var showPhoto = function (i) {
+            at = (i + photos.length) % photos.length;
+            var ph = photos[at];
+            boxImg.classList.remove('is-ready');
+            boxImg.alt = ph.caption;
+            boxImg.src = ph.src;
+            if (boxImg.complete && boxImg.naturalWidth) boxImg.classList.add('is-ready');
+            boxCap.textContent = ph.caption;
+            boxCount.textContent = photos.length > 1 ? 'Photo ' + (at + 1) + ' of ' + photos.length : '';
+            if (photos.length > 1) { new Image().src = photos[(at + 1) % photos.length].src; }   // have the next one ready
+        };
+        var build = function () {
+            box = document.createElement('dialog');
+            box.className = 'lightbox';
+            box.setAttribute('aria-label', 'Photo viewer');
+            box.innerHTML =
+                '<div class="lightbox__bar"><p class="lightbox__title"></p><p class="lightbox__count"></p>' +
+                '<button type="button" class="lightbox__close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg>Close</button></div>' +
+                '<div class="lightbox__stage">' +
+                '<button type="button" class="lightbox__nav lightbox__nav--prev" aria-label="Previous photo">' + arrow('M15 5l-7 7 7 7') + '</button>' +
+                '<figure class="lightbox__fig"><img class="lightbox__img" alt="" decoding="async"><figcaption class="lightbox__caption" aria-live="polite"></figcaption></figure>' +
+                '<button type="button" class="lightbox__nav lightbox__nav--next" aria-label="Next photo">' + arrow('M9 5l7 7-7 7') + '</button></div>';
+            document.body.appendChild(box);
+            boxImg = box.querySelector('.lightbox__img'); boxCap = box.querySelector('.lightbox__caption');
+            boxTitle = box.querySelector('.lightbox__title'); boxCount = box.querySelector('.lightbox__count');
+            boxPrev = box.querySelector('.lightbox__nav--prev'); boxNext = box.querySelector('.lightbox__nav--next');
+            boxStage = box.querySelector('.lightbox__stage'); boxFig = box.querySelector('.lightbox__fig');
+            boxImg.addEventListener('load', function () { boxImg.classList.add('is-ready'); });
+            box.querySelector('.lightbox__close').addEventListener('click', function () { box.close(); });
+            boxPrev.addEventListener('click', function () { showPhoto(at - 1); });
+            boxNext.addEventListener('click', function () { showPhoto(at + 1); });
+            // a click on the dark area around the photo closes the viewer
+            box.addEventListener('click', function (e) { if (e.target === box || e.target === boxStage || e.target === boxFig) box.close(); });
+            box.addEventListener('keydown', function (e) {
+                if (photos.length < 2) return;
+                if (e.key === 'ArrowLeft') { showPhoto(at - 1); e.preventDefault(); }
+                else if (e.key === 'ArrowRight') { showPhoto(at + 1); e.preventDefault(); }
+            });
+            var sx = null, sy = null;
+            // one finger swipes between photos; two fingers are a pinch, and a zoomed-in photo is being panned
+            boxStage.addEventListener('touchstart', function (e) {
+                if (e.touches.length > 1) { sx = null; return; }
+                sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+            }, { passive: true });
+            boxStage.addEventListener('touchend', function (e) {
+                var zoomed = window.visualViewport && window.visualViewport.scale > 1.05;
+                if (sx === null || photos.length < 2 || zoomed) { sx = null; return; }
+                var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+                if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) showPhoto(at + (dx < 0 ? 1 : -1));
+            });
+            boxStage.addEventListener('touchcancel', function () { sx = null; });
+            box.addEventListener('close', function () {
+                document.documentElement.classList.remove('is-viewing');
+                boxImg.removeAttribute('src');
+                if (opener) opener.focus();
+                if (inHistory) { inHistory = false; history.back(); }   // closed from the page: drop the viewer's history entry
+            });
+            window.addEventListener('popstate', function () {
+                if (history.state && history.state.viewer) return;                 // landed on a viewer entry, not out of one
+                if (inHistory) { inHistory = false; if (box.open) box.close(); }   // Back pressed while viewing
+            });
+        };
+        var openViewer = function (list, i, heading, from) {
+            if (!box) build();
+            photos = list; opener = from;
+            boxTitle.textContent = heading;
+            boxPrev.hidden = boxNext.hidden = list.length < 2;
+            document.documentElement.classList.add('is-viewing');
+            box.showModal();
+            if (!inHistory && history.pushState) { history.pushState({ viewer: true }, ''); inHistory = true; }
+            showPhoto(i);
+        };
+        [].forEach.call(shots, function (a) {
+            a.addEventListener('click', function (e) {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;   // new tab or window: leave it to the browser
+                e.preventDefault();
+                if (a.hasAttribute('data-photos')) {
+                    openViewer(JSON.parse(a.getAttribute('data-photos')).map(function (ph) { return { src: 'img/' + ph[0], caption: ph[1] }; }),
+                        0, a.getAttribute('data-title'), a);
+                } else {
+                    var set = [].slice.call(document.querySelectorAll('a[data-set="' + a.getAttribute('data-set') + '"]'));
+                    openViewer(set.map(function (x) { return { src: x.getAttribute('href'), caption: x.getAttribute('data-caption') }; }),
+                        set.indexOf(a), 'From the field', a);
+                }
+            });
+        });
+    }
+
     // Enquiry form: opens the visitor's email app with the details filled in.
     var form = document.getElementById('enquiry');
     if (form) {
